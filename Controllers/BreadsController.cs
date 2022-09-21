@@ -15,8 +15,79 @@ namespace DotnetBakery.Controllers
     public class BreadsController : ControllerBase
     {
         private readonly ApplicationContext _context;
-        public BreadsController(ApplicationContext context) {
+        public BreadsController(ApplicationContext context)
+        {
             _context = context;
+        }
+
+        [HttpGet]
+        public IEnumerable<Bread> GetAll()
+        {
+            // include the joined baker for each bread
+            return _context.Breads.Include(Baker => Baker.bakedBy);
+        }
+
+        [HttpGet("{id}")]
+        public ActionResult<Bread> GetById(int id)
+        {
+            Bread bread = _context.Breads
+                .Include(Baker => Baker.bakedBy)
+                .SingleOrDefault(bread => bread.id == id);
+
+
+            if (bread is null)
+            {
+                // can't find it
+                return NotFound(); // status 404
+            }
+
+            return bread;
+        }
+
+        [HttpPost]
+        public IActionResult Post(Bread bread)
+        {
+            _context.Add(bread);
+            _context.SaveChanges();
+
+            return CreatedAtAction(nameof(Post), new { id = bread.id }, bread);
+        }
+
+        [HttpPut("{id}")] // req.params.id
+        public IActionResult Put(int id, Bread bread)
+        {
+            Console.WriteLine("updating bread");
+
+            if (id != bread.id)
+            {
+                // does not match the given bread id
+                return BadRequest();
+            }
+
+            // update the DB
+            _context.Update(bread);
+            _context.SaveChanges();
+
+            return NoContent(); // 204
+        }
+
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
+        {
+            // select the bread from the DB
+            // singleordefault is like array.filter()
+            Bread bread = _context.Breads.SingleOrDefault(b => b.id == id);
+
+            if (bread is null)
+            {
+                // not bread with this id
+                return NotFound();
+            }
+
+            _context.Breads.Remove(bread);
+            _context.SaveChanges();
+
+            return NoContent(); //204
         }
     }
 }
